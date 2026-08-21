@@ -1,2 +1,2 @@
 # qmlogout
-QMLogout is a native lgout menu for Wayland.
+QMLogout is a native logout menu for Wayland.
