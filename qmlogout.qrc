@@ -1,0 +1,9 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource prefix="/app/qmlogout">
+    <file>qml/main.qml</file>
+</qresource>
+<qresource prefix="/">
+    <file>config/qmlogout.conf</file>
+    <file>icons/user-avatar.svg</file>
+</qresource>
+</RCC>
