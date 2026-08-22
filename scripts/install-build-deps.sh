@@ -24,6 +24,7 @@ $APT_COMMAND update -q
 $APT_COMMAND install -y --no-install-recommends \
     appstream \
     build-essential \
+    cmake \
     curl \
     devscripts \
     equivs \
