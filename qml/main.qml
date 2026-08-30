@@ -28,7 +28,19 @@ Window {
         { name: qsTr("Shutdown"), icon: "system-shutdown", glyph: "\uf011", method: "shutdown", key: "s" }
     ]
 
+    function actionEnabled(action) {
+        if (!action)
+            return false
+        if (action.method === "suspend")
+            return sessionManager.canSuspend
+        if (action.method === "hibernate")
+            return sessionManager.canHibernate
+        return true
+    }
+
     function triggerAction(index) {
+        if (index < 0 || index >= actions.length || !actionEnabled(actions[index]))
+            return
         selectedIndex = index
         activatedIndex = index
         countdownTimer.stop()
@@ -36,8 +48,15 @@ Window {
     }
 
     function moveSelection(delta) {
-        selectedIndex = (selectedIndex + delta + actions.length) % actions.length
-        Qt.callLater(function() { actionRepeater.itemAt(selectedIndex).forceActiveFocus() })
+        var nextIndex = selectedIndex
+        for (var attempt = 0; attempt < actions.length; ++attempt) {
+            nextIndex = (nextIndex + delta + actions.length) % actions.length
+            if (actionEnabled(actions[nextIndex])) {
+                selectedIndex = nextIndex
+                Qt.callLater(function() { actionRepeater.itemAt(selectedIndex).forceActiveFocus() })
+                return
+            }
+        }
     }
 
 
@@ -143,6 +162,7 @@ Window {
                     delegate: Maui.Chip {
                         required property var modelData
                         required property int index
+                        enabled: root.actionEnabled(modelData)
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         focus: index === root.selectedIndex
@@ -160,7 +180,7 @@ Window {
                                 ColorAnimation { duration: 180; easing.type: Easing.InOutQuad }
                             }
                         }
-                        opacity: index === root.selectedIndex ? 1.0 : 0.78
+                        opacity: !enabled ? 0.38 : index === root.selectedIndex ? 1.0 : 0.78
                         Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.InOutQuad } }
 
                         onHoveredChanged: if (hovered) {

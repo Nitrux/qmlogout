@@ -20,6 +20,23 @@ bool usableImage(const QString &path)
     reader.setDecideFormatFromContent(true);
     return reader.canRead();
 }
+
+bool loginActionSupported(const QString &action)
+{
+    QProcess process;
+    process.start(QStringLiteral("/usr/bin/loginctl"), {action});
+    if (!process.waitForStarted(1000))
+        return false;
+
+    if (!process.waitForFinished(2000)) {
+        process.kill();
+        process.waitForFinished();
+        return false;
+    }
+
+    return QString::fromLocal8Bit(process.readAllStandardOutput()).trimmed()
+        .compare(QStringLiteral("yes"), Qt::CaseInsensitive) == 0;
+}
 }
 
 SessionManager::SessionManager(const QString &avatarOverride,
@@ -30,6 +47,8 @@ SessionManager::SessionManager(const QString &avatarOverride,
     , m_iconMode(iconMode.trimmed().toLower() == QStringLiteral("nerd")
                      ? QStringLiteral("nerd") : QStringLiteral("system"))
     , m_showUptime(showUptime)
+    , m_canSuspend(loginActionSupported(QStringLiteral("can-suspend")))
+    , m_canHibernate(loginActionSupported(QStringLiteral("can-hibernate")))
 {
     const passwd *entry = getpwuid(getuid());
     const QString username = entry ? QString::fromLocal8Bit(entry->pw_name)
@@ -119,8 +138,8 @@ void SessionManager::hibernate()
 
 void SessionManager::logout()
 {
-    start(QStringLiteral("logout"), QStringLiteral("/usr/bin/hyprctl"),
-          {QStringLiteral("dispatch"), QStringLiteral("exit")});
+    start(QStringLiteral("logout"), QStringLiteral("/usr/bin/pkill"),
+          {QStringLiteral("Hyprland")});
 }
 
 void SessionManager::lock()
