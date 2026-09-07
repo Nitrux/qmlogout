@@ -3,15 +3,12 @@
 
 #include "sessionmanager.h"
 
-#include <QDBusConnection>
-#include <QDBusMessage>
-#include <QDBusReply>
-#include <QDebug>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QImageReader>
 #include <QProcess>
+#include <QTextStream>
 #include <QTimer>
 
 #include <pwd.h>
@@ -28,21 +25,62 @@ bool usableImage(const QString &path)
     return reader.canRead();
 }
 
-bool loginActionSupported(const QString &action)
+qint64 activeSwapSizeKiB()
 {
-    const QDBusMessage message = QDBusMessage::createMethodCall(
-        QStringLiteral("org.freedesktop.login1"),
-        QStringLiteral("/org/freedesktop/login1"),
-        QStringLiteral("org.freedesktop.login1.Manager"), action);
-    const QDBusReply<QString> reply = QDBusConnection::systemBus().call(
-        message, QDBus::Block, 2000);
-    if (!reply.isValid()) {
-        qWarning() << "Could not query" << action << ":" << reply.error().message();
-        return true;
+    const QFileInfo swapLabel(QStringLiteral("/dev/disk/by-label/SWAP"));
+    if (!swapLabel.exists())
+        return -1;
+
+    const QString swapDevice = swapLabel.canonicalFilePath();
+    if (swapDevice.isEmpty())
+        return -1;
+
+    QFile swaps(QStringLiteral("/proc/swaps"));
+    if (!swaps.open(QIODevice::ReadOnly | QIODevice::Text))
+        return -1;
+
+    QTextStream stream(&swaps);
+    QString line;
+    stream.readLine();
+    while (stream.readLineInto(&line)) {
+        const QStringList fields = line.simplified().split(QStringLiteral(" "), Qt::SkipEmptyParts);
+        if (fields.size() < 3 || QFileInfo(fields.at(0)).canonicalFilePath() != swapDevice)
+            continue;
+
+        bool ok = false;
+        const qint64 sizeKiB = fields.at(2).toLongLong(&ok);
+        return ok ? sizeKiB : -1;
     }
 
-    // Disable only explicit negative replies; "challenge" allows authentication.
-    return reply.value() != QStringLiteral("no") && reply.value() != QStringLiteral("na");
+    return -1;
+}
+
+qint64 totalMemoryKiB()
+{
+    QFile memoryInfo(QStringLiteral("/proc/meminfo"));
+    if (!memoryInfo.open(QIODevice::ReadOnly | QIODevice::Text))
+        return -1;
+
+    QTextStream stream(&memoryInfo);
+    QString line;
+    while (stream.readLineInto(&line)) {
+        const QStringList fields = line.simplified().split(QStringLiteral(" "), Qt::SkipEmptyParts);
+        if (fields.size() < 2 || fields.at(0) != QStringLiteral("MemTotal:"))
+            continue;
+
+        bool ok = false;
+        const qint64 sizeKiB = fields.at(1).toLongLong(&ok);
+        return ok ? sizeKiB : -1;
+    }
+
+    return -1;
+}
+
+bool hasEnoughSwapForHibernate()
+{
+    const qint64 swapSizeKiB = activeSwapSizeKiB();
+    const qint64 memorySizeKiB = totalMemoryKiB();
+    return swapSizeKiB > 0 && memorySizeKiB > 0 && swapSizeKiB >= memorySizeKiB * 2;
 }
 }
 
@@ -54,8 +92,8 @@ SessionManager::SessionManager(const QString &avatarOverride,
     , m_iconMode(iconMode.trimmed().toLower() == QStringLiteral("nerd")
                      ? QStringLiteral("nerd") : QStringLiteral("system"))
     , m_showUptime(showUptime)
-    , m_canSuspend(loginActionSupported(QStringLiteral("CanSuspend")))
-    , m_canHibernate(loginActionSupported(QStringLiteral("CanHibernate")))
+    , m_canSuspend(activeSwapSizeKiB() > 0)
+    , m_canHibernate(hasEnoughSwapForHibernate())
 {
     const passwd *entry = getpwuid(getuid());
     const QString username = entry ? QString::fromLocal8Bit(entry->pw_name)
