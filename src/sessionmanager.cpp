@@ -3,6 +3,10 @@
 
 #include "sessionmanager.h"
 
+#include <QDBusConnection>
+#include <QDBusMessage>
+#include <QDBusReply>
+#include <QDebug>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -26,19 +30,19 @@ bool usableImage(const QString &path)
 
 bool loginActionSupported(const QString &action)
 {
-    QProcess process;
-    process.start(QStringLiteral("/usr/bin/loginctl"), {action});
-    if (!process.waitForStarted(1000))
-        return false;
-
-    if (!process.waitForFinished(2000)) {
-        process.kill();
-        process.waitForFinished();
-        return false;
+    const QDBusMessage message = QDBusMessage::createMethodCall(
+        QStringLiteral("org.freedesktop.login1"),
+        QStringLiteral("/org/freedesktop/login1"),
+        QStringLiteral("org.freedesktop.login1.Manager"), action);
+    const QDBusReply<QString> reply = QDBusConnection::systemBus().call(
+        message, QDBus::Block, 2000);
+    if (!reply.isValid()) {
+        qWarning() << "Could not query" << action << ":" << reply.error().message();
+        return true;
     }
 
-    return QString::fromLocal8Bit(process.readAllStandardOutput()).trimmed()
-        .compare(QStringLiteral("yes"), Qt::CaseInsensitive) == 0;
+    // Disable only explicit negative replies; "challenge" allows authentication.
+    return reply.value() != QStringLiteral("no") && reply.value() != QStringLiteral("na");
 }
 }
 
@@ -50,8 +54,8 @@ SessionManager::SessionManager(const QString &avatarOverride,
     , m_iconMode(iconMode.trimmed().toLower() == QStringLiteral("nerd")
                      ? QStringLiteral("nerd") : QStringLiteral("system"))
     , m_showUptime(showUptime)
-    , m_canSuspend(loginActionSupported(QStringLiteral("can-suspend")))
-    , m_canHibernate(loginActionSupported(QStringLiteral("can-hibernate")))
+    , m_canSuspend(loginActionSupported(QStringLiteral("CanSuspend")))
+    , m_canHibernate(loginActionSupported(QStringLiteral("CanHibernate")))
 {
     const passwd *entry = getpwuid(getuid());
     const QString username = entry ? QString::fromLocal8Bit(entry->pw_name)

@@ -68,7 +68,7 @@ Priority: optional
 Architecture: $ARCHITECTURE
 Maintainer: $MAINTAINER
 Description: $DESCRIPTION
-Depends: libkf6coreaddons6, liblayershellqtinterface6, libqt6core6t64, libqt6gui6, libqt6qml6, libqt6quick6, libqt6quickcontrols2-6, libqt6waylandclient6, mauikit (>= 4.0.4), qt6-wayland
+Depends: libkf6coreaddons6, liblayershellqtinterface6, libqt6core6t64, libqt6dbus6, libqt6gui6, libqt6qml6, libqt6quick6, libqt6quickcontrols2-6, libqt6waylandclient6, mauikit (>= 4.0.4), qt6-wayland
 EOF
 
 

@@ -27,6 +27,7 @@ qt_deps = dependency(
     version: '>=6.6',
     modules: [
         'Core',
+        'DBus',
         'Gui',
         'Qml',
         'Quick',
