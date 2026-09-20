@@ -183,8 +183,8 @@ void SessionManager::hibernate()
 
 void SessionManager::logout()
 {
-    start(QStringLiteral("logout"), QStringLiteral("/usr/bin/pkill"),
-          {QStringLiteral("Hyprland")});
+    start(QStringLiteral("logout"), QStringLiteral("/usr/bin/nwsm"),
+          {QStringLiteral("stop")});
 }
 
 void SessionManager::lock()
