@@ -211,13 +211,7 @@ bool SessionManager::start(const QString &action, const QString &program,
         return false;
     }
 
-    QProcess process;
-    process.setProgram(program);
-    process.setArguments(arguments);
-    process.setStandardOutputFile(QProcess::nullDevice());
-    process.setStandardErrorFile(QProcess::nullDevice());
-
-    if (!process.startDetached()) {
+    if (!QProcess::startDetached(program, arguments)) {
         emit actionFailed(action, tr("Could not start: %1").arg(program));
         return false;
     }
