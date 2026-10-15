@@ -25,7 +25,7 @@ QMLogout is a lightweight Wayland session management menu for Nitrux OS. It prov
 ### Runtime Requirements
 
 ```
-mauikit (>= 4.0.3)
+mauikit (>= 4.0.5)
 layer-shell-qt
 qt6 (>= 6.9.2)
 qt6-wayland (>= 6.9.2)

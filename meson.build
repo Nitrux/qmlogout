@@ -13,6 +13,7 @@ project(
 )
 
 cpp_args = []
+cpp_compiler = meson.get_compiler('cpp')
 if host_machine.cpu_family() == 'x86_64'
     cpp_args += ['-march=x86-64-v3']
 endif
@@ -36,20 +37,13 @@ qt_deps = dependency(
 )
 
 kf6coreaddons_dep = dependency('KF6CoreAddons', version: '>=6.0', required: true)
-mauikit_dep = dependency('MauiKit4', version: '>=4.0.4', required: true)
+mauikit_dep = dependency('MauiKit4', version: '>=4.0.5', required: true)
 mauikit_runtime_dep = declare_dependency(
     dependencies: mauikit_dep,
     link_args: ['-Wl,--no-as-needed'],
 )
 
-# LayerShell-Qt has used both pkg-config names across distributions.
-dep_layer_shell = dependency('LayerShellQt', required: false)
-if not dep_layer_shell.found()
-    dep_layer_shell = dependency('LayerShellQtInterface', required: false)
-endif
-if not dep_layer_shell.found()
-    dep_layer_shell = meson.get_compiler('cpp').find_library('LayerShellQtInterface', required: false)
-endif
+dep_layer_shell = cpp_compiler.find_library('LayerShellQtInterface', required: false)
 if not dep_layer_shell.found()
     error('LayerShell-Qt was not found. Install liblayershellqtinterface-dev.')
 endif
