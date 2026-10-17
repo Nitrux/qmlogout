@@ -153,7 +153,7 @@ void SessionManager::updateUptime()
         : QStringLiteral("%1:%2:%3").arg(hours, 2, 10, QLatin1Char('0')).arg(minutes, 2, 10, QLatin1Char('0')).arg(seconds, 2, 10, QLatin1Char('0'));
     if (m_uptime != value) {
         m_uptime = value;
-        emit uptimeChanged();
+        Q_EMIT uptimeChanged();
     }
 }
 
@@ -207,12 +207,12 @@ bool SessionManager::start(const QString &action, const QString &program,
 {
     const QFileInfo executable(program);
     if (!executable.isFile() || !executable.isExecutable()) {
-        emit actionFailed(action, tr("Command not found: %1").arg(program));
+        Q_EMIT actionFailed(action, tr("Command not found: %1").arg(program));
         return false;
     }
 
     if (!QProcess::startDetached(program, arguments)) {
-        emit actionFailed(action, tr("Could not start: %1").arg(program));
+        Q_EMIT actionFailed(action, tr("Could not start: %1").arg(program));
         return false;
     }
 

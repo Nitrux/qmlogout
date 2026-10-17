@@ -43,7 +43,7 @@ public:
     Q_INVOKABLE void logout();
     Q_INVOKABLE void lock();
 
-signals:
+Q_SIGNALS:
     void uptimeChanged();
     void actionFailed(const QString &action, const QString &error);
 

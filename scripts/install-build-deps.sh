@@ -6,7 +6,7 @@
 
 # -- Exit on errors.
 
-set -e
+set -euo pipefail
 
 
 # -- Check if running as root.
@@ -25,6 +25,7 @@ $APT_COMMAND install -y --no-install-recommends \
     appstream \
     build-essential \
     cmake \
+    extra-cmake-modules \
     curl \
     devscripts \
     equivs \
@@ -35,8 +36,6 @@ $APT_COMMAND install -y --no-install-recommends \
     liblayershellqtinterface-dev \
     libwayland-dev \
     lintian \
-    meson \
-    ninja-build \
     nlohmann-json3-dev \
     pkg-config \
     qt6-base-dev \

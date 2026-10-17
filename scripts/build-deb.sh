@@ -6,7 +6,7 @@
 
 # -- Exit on errors.
 
-set -e
+set -euo pipefail
 
 
 # -- Prepare source.
@@ -20,22 +20,25 @@ cp -r "$SRC_DIR"/* "$BUILD_WORK_DIR/"
 cd "$BUILD_WORK_DIR"
 
 
-# -- Configure build.
-
-MESON_ARGS=(--prefix=/usr --buildtype=release)
-
 DEB_ARCH="$(dpkg --print-architecture)"
+DEB_HOST_MULTIARCH="$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
+# MauiKit software MUST be built with CMake and ECM; NEVER use Meson.
+CMAKE_ARGS=(
+    -DCMAKE_INSTALL_PREFIX=/usr
+    -DKDE_INSTALL_LIBDIR="lib/$DEB_HOST_MULTIARCH"
+    -DCMAKE_BUILD_TYPE=Release
+)
 
 if [ "$DEB_ARCH" = "amd64" ]; then
-    MESON_ARGS+=("-Dcpp_args=-march=x86-64-v3")
+    CMAKE_ARGS+=(-DCMAKE_CXX_FLAGS=-march=x86-64-v3)
 fi
 
-meson setup .build "${MESON_ARGS[@]}"
+cmake -S . -B .build "${CMAKE_ARGS[@]}"
 
 
 # -- Compile source.
 
-ninja -C .build -k 0 -j "$(nproc)"
+cmake --build .build --parallel "$(nproc)"
 
 
 # -- Create a temporary DESTDIR for packaging.
@@ -46,7 +49,7 @@ rm -rf "$DESTDIR"
 
 # -- Install binary to DESTDIR.
 
-DESTDIR="$DESTDIR" ninja -C .build install
+DESTDIR="$DESTDIR" cmake --install .build
 
 
 
@@ -55,7 +58,7 @@ DESTDIR="$DESTDIR" ninja -C .build install
 mkdir -p "$DESTDIR/DEBIAN"
 
 PKGNAME="qmlogout"
-VERSION="${PACKAGE_VERSION:-0.0.1}"
+VERSION="${PACKAGE_VERSION:?PACKAGE_VERSION must be supplied by CI}"
 MAINTAINER="uri_herrera@nxos.org"
 ARCHITECTURE="$(dpkg --print-architecture)"
 DESCRIPTION="Native QML logout menu for Wayland environments."
@@ -68,7 +71,7 @@ Priority: optional
 Architecture: $ARCHITECTURE
 Maintainer: $MAINTAINER
 Description: $DESCRIPTION
-Depends: nwsm, libkf6coreaddons6, liblayershellqtinterface6, libqt6core6t64, libqt6gui6, libqt6qml6, libqt6quick6, libqt6quickcontrols2-6, libqt6waylandclient6, mauikit (>= 4.0.5), qml6-module-qtquick,qml6-module-qtquick-controls,qml6-module-qtquick-layouts,qml6-module-qtquick-effects, qt6-wayland
+Depends: libqt6dbus6,nwsm, libkf6coreaddons6, liblayershellqtinterface6, libqt6core6t64, libqt6gui6, libqt6qml6, libqt6quick6, libqt6quickcontrols2-6, libqt6waylandclient6, mauikit (>= 4.0.5), qml6-module-qtquick,qml6-module-qtquick-controls,qml6-module-qtquick-layouts,qml6-module-qtquick-effects, qt6-wayland
 EOF
 
 
