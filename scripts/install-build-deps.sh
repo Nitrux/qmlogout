@@ -34,6 +34,7 @@ $APT_COMMAND install -y --no-install-recommends \
     gnupg2 \
     libkf6coreaddons-dev \
     liblayershellqtinterface-dev \
+    libxkbcommon-dev \
     libwayland-dev \
     lintian \
     nlohmann-json3-dev \
